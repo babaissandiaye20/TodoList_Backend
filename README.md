@@ -425,7 +425,7 @@ Les variables sont définies dans le fichier `.env` à la racine du projet et ch
 
 ---
 
-## Auteure
+## Autrice
 
 **Confectionné par** : Ndeye Dionne Tine
 📧 Email : *`votre-email@exemple.com`*
