@@ -422,3 +422,10 @@ Les variables sont définies dans le fichier `.env` à la racine du projet et ch
 | `SERVER_PORT` | Port du serveur | `8080` |
 
 > **⚠️ Important** : Le fichier `.env` contient des secrets et est ignoré par Git (`.gitignore`). Utilisez `.env.example` comme modèle.
+
+---
+
+## Auteure
+
+**Confectionné par** : Ndeye Dionne Tine
+📧 Email : *`votre-email@exemple.com`*
