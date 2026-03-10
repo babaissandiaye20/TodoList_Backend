@@ -1,15 +1,20 @@
 package com.TodoList.TodoList_Backend.service;
 
+import com.TodoList.TodoList_Backend.dto.TodoRequestDto;
+import com.TodoList.TodoList_Backend.dto.TodoResponseDto;
+import com.TodoList.TodoList_Backend.dto.TodoStatusDto;
 import com.TodoList.TodoList_Backend.entity.Todo;
 import com.TodoList.TodoList_Backend.entity.enums.TodoStatus;
+import com.TodoList.TodoList_Backend.exception.BadRequestException;
+import com.TodoList.TodoList_Backend.exception.ResourceAlreadyExistsException;
 import com.TodoList.TodoList_Backend.exception.ResourceNotFoundException;
+import com.TodoList.TodoList_Backend.mapper.TodoMapper;
 import com.TodoList.TodoList_Backend.repository.TodoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,86 +24,70 @@ import java.util.UUID;
 public class TodoServiceImpl implements TodoService {
 
     private final TodoRepository todoRepository;
+    private final TodoMapper todoMapper;
 
     @Override
     @Transactional
-    public Todo save(Todo todo) {
-        log.debug("Sauvegarde d'une nouvelle tâche: {}", todo.getTitre());
-        return todoRepository.save(todo);
+    public TodoResponseDto create(TodoRequestDto dto) {
+        if (todoRepository.existsByTitre(dto.getTitre())) {
+            throw new ResourceAlreadyExistsException(
+                    "Une tâche avec le titre '" + dto.getTitre() + "' existe déjà");
+        }
+        Todo todo = todoMapper.toEntity(dto);
+        return todoMapper.toResponseDto(todoRepository.save(todo));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Todo findById(UUID id) {
-        log.debug("Recherche de la tâche avec id: {}", id);
-        return todoRepository.findTodoById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Todo", id));
+    public TodoResponseDto getById(UUID id) {
+        return todoMapper.toResponseDto(findTodoById(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Todo> findAll() {
-        log.debug("Récupération de toutes les tâches");
-        return todoRepository.findAllTodos();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Todo> findAllByStatut(TodoStatus statut) {
-        log.debug("Récupération des tâches par statut: {}", statut);
-        return todoRepository.findAllByStatut(statut);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Todo> findAllWithFilters(TodoStatus statut, LocalDate dateDebut, LocalDate dateFin) {
-        log.debug("Filtrage des tâches - statut: {}, dateDebut: {}, dateFin: {}", statut, dateDebut, dateFin);
-        return todoRepository.findAllWithFilters(statut, dateDebut, dateFin);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Todo> findAllEnRetard() {
-        log.debug("Récupération des tâches en retard");
-        return todoRepository.findAllEnRetard(LocalDate.now());
+    public List<TodoResponseDto> getAll() {
+        return todoMapper.toResponseDtoList(todoRepository.findAllTodos());
     }
 
     @Override
     @Transactional
-    public Todo update(UUID id, Todo todo) {
-        log.debug("Mise à jour de la tâche avec id: {}", id);
-        Todo existing = findById(id);
-        existing.setTitre(todo.getTitre());
-        existing.setDescription(todo.getDescription());
-        return todoRepository.save(existing);
+    public TodoResponseDto update(UUID id, TodoRequestDto dto) {
+        if (todoRepository.existsByTitreAndIdNot(dto.getTitre(), id)) {
+            throw new ResourceAlreadyExistsException(
+                    "Une tâche avec le titre '" + dto.getTitre() + "' existe déjà");
+        }
+        Todo existing = findTodoById(id);
+        existing.setTitre(dto.getTitre());
+        existing.setDescription(dto.getDescription());
+        return todoMapper.toResponseDto(todoRepository.save(existing));
     }
 
     @Override
     @Transactional
-    public Todo updateStatut(UUID id, TodoStatus statut) {
-        log.debug("Changement de statut de la tâche {} vers {}", id, statut);
-        Todo existing = findById(id);
-        existing.setStatut(statut);
-        return todoRepository.save(existing);
+    public TodoResponseDto updateStatut(UUID id, TodoStatusDto dto) {
+        Todo existing = findTodoById(id);
+
+        if (existing.getStatut() == dto.getStatut()) {
+            throw new BadRequestException(
+                    "La tâche est déjà au statut " + dto.getStatut());
+        }
+
+        existing.setStatut(dto.getStatut());
+        return todoMapper.toResponseDto(todoRepository.save(existing));
     }
 
     @Override
     @Transactional
     public void delete(UUID id) {
-        log.debug("Suppression de la tâche avec id: {}", id);
-        Todo existing = findById(id);
-        todoRepository.delete(existing);
+        Todo todo = findTodoById(id);
+        if (todo.getStatut() != TodoStatus.TERMINEE) {
+            throw new BadRequestException("Seules les tâches terminées peuvent être supprimées");
+        }
+        todoRepository.delete(todo);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByTitre(String titre) {
-        return todoRepository.existsByTitre(titre);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByTitreAndIdNot(String titre, UUID id) {
-        return todoRepository.existsByTitreAndIdNot(titre, id);
+    private Todo findTodoById(UUID id) {
+        return todoRepository.findTodoById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Todo", id));
     }
 }

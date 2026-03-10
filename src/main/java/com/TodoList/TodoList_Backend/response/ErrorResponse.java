@@ -20,50 +20,26 @@ public class ErrorResponse {
     private int status;
     private String message;
     private String errorCode;
-    private String detail;
 
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
 
     private List<FieldError> errors;
 
-    // ============================================
-    // MÉTHODES FACTORY
-    // ============================================
-
-    public static ErrorResponse error(String message, int status, String errorCode) {
-        return ErrorResponse.builder()
-                .success(false)
-                .status(status)
-                .message(message)
-                .errorCode(errorCode)
-                .build();
-    }
-
-    public static ErrorResponse error(String message, String detail, int status, String errorCode) {
-        return ErrorResponse.builder()
-                .success(false)
-                .status(status)
-                .message(message)
-                .detail(detail)
-                .errorCode(errorCode)
-                .build();
-    }
-
-    public static ErrorResponse notFound(String resourceName) {
+    public static ErrorResponse notFound(String message) {
         return ErrorResponse.builder()
                 .success(false)
                 .status(404)
-                .message(resourceName + " non trouvé(e)")
+                .message(message)
                 .errorCode("RESOURCE_NOT_FOUND")
                 .build();
     }
 
-    public static ErrorResponse conflict(String resourceName) {
+    public static ErrorResponse conflict(String message) {
         return ErrorResponse.builder()
                 .success(false)
                 .status(409)
-                .message(resourceName + " existe déjà")
+                .message(message)
                 .errorCode("RESOURCE_ALREADY_EXISTS")
                 .build();
     }
@@ -77,15 +53,6 @@ public class ErrorResponse {
                 .build();
     }
 
-    public static ErrorResponse internalError(String message) {
-        return ErrorResponse.builder()
-                .success(false)
-                .status(500)
-                .message(message)
-                .errorCode("INTERNAL_ERROR")
-                .build();
-    }
-
     public static ErrorResponse validationError(String message, List<FieldError> errors) {
         return ErrorResponse.builder()
                 .success(false)
@@ -96,9 +63,14 @@ public class ErrorResponse {
                 .build();
     }
 
-    // ============================================
-    // INNER CLASS - ERREUR DE CHAMP
-    // ============================================
+    public static ErrorResponse internalError(String message) {
+        return ErrorResponse.builder()
+                .success(false)
+                .status(500)
+                .message(message)
+                .errorCode("INTERNAL_ERROR")
+                .build();
+    }
 
     @Data
     @Builder

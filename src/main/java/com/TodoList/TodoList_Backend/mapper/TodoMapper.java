@@ -15,8 +15,6 @@ public class TodoMapper {
         return Todo.builder()
                 .titre(dto.getTitre())
                 .description(dto.getDescription())
-                .dateDebut(dto.getDateDebut())
-                .datePrevueFin(dto.getDatePrevueFin())
                 .build();
     }
 
@@ -26,9 +24,6 @@ public class TodoMapper {
                 .titre(todo.getTitre())
                 .description(todo.getDescription())
                 .statut(todo.getStatut())
-                .dateCreation(todo.getDateCreation())
-                .dateDebut(todo.getDateDebut())
-                .datePrevueFin(todo.getDatePrevueFin())
                 .build();
     }
 
@@ -36,12 +31,5 @@ public class TodoMapper {
         return todos.stream()
                 .map(this::toResponseDto)
                 .collect(Collectors.toList());
-    }
-
-    public void updateEntityFromDto(TodoRequestDto dto, Todo todo) {
-        todo.setTitre(dto.getTitre());
-        todo.setDescription(dto.getDescription());
-        todo.setDateDebut(dto.getDateDebut() != null ? dto.getDateDebut() : todo.getDateDebut());
-        todo.setDatePrevueFin(dto.getDatePrevueFin());
     }
 }

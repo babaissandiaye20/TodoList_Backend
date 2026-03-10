@@ -1,33 +1,23 @@
 package com.TodoList.TodoList_Backend.service;
 
-import com.TodoList.TodoList_Backend.entity.Todo;
-import com.TodoList.TodoList_Backend.entity.enums.TodoStatus;
+import com.TodoList.TodoList_Backend.dto.TodoRequestDto;
+import com.TodoList.TodoList_Backend.dto.TodoResponseDto;
+import com.TodoList.TodoList_Backend.dto.TodoStatusDto;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 public interface TodoService {
 
-    Todo save(Todo todo);
+    TodoResponseDto create(TodoRequestDto dto);
 
-    Todo findById(UUID id);
+    TodoResponseDto getById(UUID id);
 
-    List<Todo> findAll();
+    List<TodoResponseDto> getAll();
 
-    List<Todo> findAllByStatut(TodoStatus statut);
+    TodoResponseDto update(UUID id, TodoRequestDto dto);
 
-    List<Todo> findAllWithFilters(TodoStatus statut, LocalDate dateDebut, LocalDate dateFin);
-
-    List<Todo> findAllEnRetard();
-
-    Todo update(UUID id, Todo todo);
-
-    Todo updateStatut(UUID id, TodoStatus statut);
+    TodoResponseDto updateStatut(UUID id, TodoStatusDto dto);
 
     void delete(UUID id);
-
-    boolean existsByTitre(String titre);
-
-    boolean existsByTitreAndIdNot(String titre, UUID id);
 }
