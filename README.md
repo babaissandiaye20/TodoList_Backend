@@ -36,7 +36,7 @@ API REST permettant de gérer une liste de tâches. Chaque tâche possède :
 
 **1. Configurer la base de données**
 
-Dans `src/main/resources/application.properties` :
+Dans `src/main/resources/application.yml` :
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/todolist_db
