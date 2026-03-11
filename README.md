@@ -9,26 +9,26 @@ Mini-projet : Gestion de Tâches (To-Do List)
 
 API REST permettant de gérer une liste de tâches. Chaque tâche possède :
 
-| Champ         | Type              | Description                      |
-|---------------|-------------------|----------------------------------|
-| `id`          | UUID              | Identifiant unique (généré auto) |
-| `titre`       | String            | Titre de la tâche (obligatoire)  |
-| `description` | String            | Description (optionnelle)        |
-| `statut`      | `EN_COURS` / `TERMINEE` | Statut de la tâche         |
+| Champ         | Type                    | Description                      |
+|---------------|-------------------------|----------------------------------|
+| `id`          | UUID                    | Identifiant unique (généré auto) |
+| `titre`       | String                  | Titre de la tâche (obligatoire)  |
+| `description` | String                  | Description (optionnelle)        |
+| `statut`      | `EN_COURS` / `TERMINEE` | Statut de la tâche               |
 
 ---
 
 ## Technologies utilisées
 
-| Technologie             | Version         |
-|-------------------------|-----------------|
-| Java                    | 17              |
-| Spring Boot             | 3.x             |
-| Spring Data JPA         | (inclus)        |
-| PostgreSQL / MySQL      | 8+              |
-| Lombok                  | (inclus)        |
-| Springdoc OpenAPI       | 2.x             |
-| Maven                   | Wrapper inclus  |
+| Technologie       | Version        |
+|-------------------|----------------|
+| Java              | 17             |
+| Spring Boot       | 4.0.3          |
+| Spring Data JPA   | (inclus)       |
+| MySQL             | 8+             |
+| Lombok            | (inclus)       |
+| Springdoc OpenAPI | 2.x            |
+| Maven             | Wrapper inclus |
 
 ---
 
@@ -36,68 +36,158 @@ API REST permettant de gérer une liste de tâches. Chaque tâche possède :
 
 **1. Configurer la base de données**
 
-Dans `src/main/resources/application.yml` :
+Dans `src/main/resources/application.yaml`, renseignez vos identifiants MySQL :
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/todolist_db
-spring.datasource.username=votre_utilisateur
-spring.datasource.password=votre_mot_de_passe
-spring.jpa.hibernate.ddl-auto=update
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/todolist_db
+    username: votre_utilisateur
+    password: votre_mot_de_passe
 ```
 
-**2. Lancer l'application**
+**2. Créer la base de données**
+
+```sql
+CREATE DATABASE todolist_db;
+```
+
+**3. Lancer l'application**
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-**3. Accéder à l'API**
+**4. Accéder à l'API**
 
 - API : `http://localhost:8080/api/todos`
 - Swagger UI : `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## Endpoints disponibles
+## Endpoints — Critères d'acceptation & Exceptions
 
-| Méthode | URL                      | Description                   |
-|---------|--------------------------|-------------------------------|
-| POST    | `/api/todos`             | Ajouter une tâche             |
-| GET     | `/api/todos`             | Lister toutes les tâches      |
-| GET     | `/api/todos/{id}`        | Récupérer une tâche par ID    |
-| PUT     | `/api/todos/{id}`        | Modifier une tâche            |
-| PATCH   | `/api/todos/{id}/status` | Marquer une tâche comme terminée |
-| DELETE  | `/api/todos/{id}`        | Supprimer une tâche           |
+### 1. Créer une tâche — `POST /api/todos`
 
----
-
-## Exemples de requêtes
-
-### Créer une tâche
+**Corps de la requête :**
 ```json
-POST /api/todos
 {
   "titre": "Apprendre Spring Boot",
   "description": "Suivre le cours de formation"
 }
 ```
 
-### Modifier une tâche
+**Critères d'acceptation :**
+- `titre` est obligatoire (entre 2 et 100 caractères)
+- `description` est optionnelle
+- Le statut est initialisé automatiquement à `EN_COURS`
+- Le titre doit être unique dans la base
+
+**Exceptions levées par le service :**
+| Situation | Exception | Code HTTP |
+|-----------|-----------|-----------|
+| `titre` vide ou absent | `MethodArgumentNotValidException` | `400` |
+| `titre` déjà utilisé par une autre tâche | `ResourceAlreadyExistsException` | `409` |
+
+---
+
+### 2. Lister toutes les tâches — `GET /api/todos`
+
+**Critères d'acceptation :**
+- Retourne la liste complète de toutes les tâches
+- Retourne une liste vide `[]` s'il n'y a aucune tâche (pas d'erreur)
+
+**Exceptions levées par le service :** aucune
+
+---
+
+### 3. Récupérer une tâche par ID — `GET /api/todos/{id}`
+
+**Critères d'acceptation :**
+- `{id}` doit être un UUID valide
+- Retourne la tâche correspondante si elle existe
+
+**Exceptions levées par le service :**
+| Situation | Exception | Code HTTP |
+|-----------|-----------|-----------|
+| Aucune tâche trouvée avec cet `id` | `ResourceNotFoundException` | `404` |
+
+---
+
+### 4. Modifier une tâche — `PUT /api/todos/{id}`
+
+**Corps de la requête :**
 ```json
-PUT /api/todos/{id}
 {
   "titre": "Nouveau titre",
   "description": "Nouvelle description"
 }
 ```
 
-### Marquer une tâche comme terminée
+**Critères d'acceptation :**
+- `{id}` doit correspondre à une tâche existante
+- `titre` est obligatoire (entre 2 et 100 caractères)
+- Le nouveau titre ne doit pas appartenir à une autre tâche
+- Le statut n'est pas modifié par cet endpoint
+
+**Exceptions levées par le service :**
+| Situation | Exception | Code HTTP |
+|-----------|-----------|-----------|
+| `titre` vide ou absent | `MethodArgumentNotValidException` | `400` |
+| Aucune tâche trouvée avec cet `id` | `ResourceNotFoundException` | `404` |
+| Nouveau titre déjà utilisé par une autre tâche | `ResourceAlreadyExistsException` | `409` |
+
+---
+
+### 5. Changer le statut — `PATCH /api/todos/{id}/status`
+
+**Corps de la requête :**
 ```json
-PATCH /api/todos/{id}/status
 {
   "statut": "TERMINEE"
 }
 ```
+
+**Critères d'acceptation :**
+- `{id}` doit correspondre à une tâche existante
+- `statut` est obligatoire : uniquement `EN_COURS` ou `TERMINEE`
+- Le nouveau statut doit être **différent** du statut actuel
+- Seul le statut est modifié (titre et description restent inchangés)
+
+**Exceptions levées par le service :**
+| Situation | Exception | Code HTTP |
+|-----------|-----------|-----------|
+| `statut` absent dans le corps | `MethodArgumentNotValidException` | `400` |
+| Valeur de statut invalide (ex: `"FINI"`) | `HttpMessageNotReadableException` | `400` |
+| Aucune tâche trouvée avec cet `id` | `ResourceNotFoundException` | `404` |
+| Le statut envoyé est identique au statut actuel | `BadRequestException` | `400` |
+
+---
+
+### 6. Supprimer une tâche — `DELETE /api/todos/{id}`
+
+**Critères d'acceptation :**
+- `{id}` doit correspondre à une tâche existante
+- La tâche doit avoir le statut `TERMINEE` pour pouvoir être supprimée
+- La suppression est définitive
+
+**Exceptions levées par le service :**
+| Situation | Exception | Code HTTP |
+|-----------|-----------|-----------|
+| Aucune tâche trouvée avec cet `id` | `ResourceNotFoundException` | `404` |
+| La tâche n'est pas au statut `TERMINEE` | `BadRequestException` | `400` |
+
+---
+
+## Exceptions du service
+
+| Exception | Code HTTP | errorCode | Déclencheur |
+|-----------|-----------|-----------|-------------|
+| `ResourceNotFoundException` | `404` | `RESOURCE_NOT_FOUND` | ID inconnu dans la base |
+| `ResourceAlreadyExistsException` | `409` | `RESOURCE_ALREADY_EXISTS` | Titre déjà utilisé par une autre tâche |
+| `BadRequestException` | `400` | `BAD_REQUEST` | Règle métier violée (statut identique, suppression interdite) |
+| `MethodArgumentNotValidException` | `400` | `VALIDATION_ERROR` | Champ obligatoire manquant ou invalide |
+| `HttpMessageNotReadableException` | `400` | `BAD_REQUEST` | Valeur d'enum invalide dans le corps JSON |
 
 ---
 
@@ -110,18 +200,36 @@ PATCH /api/todos/{id}/status
   "status": 200,
   "message": "Opération réussie",
   "data": { ... },
-  "timestamp": "2026-03-10T12:00:00"
+  "timestamp": "2026-03-11T12:00:00"
 }
 ```
 
-### Erreur
+### Erreur simple
 ```json
 {
   "success": false,
   "status": 404,
   "message": "Todo non trouvé avec l'identifiant: ...",
   "errorCode": "RESOURCE_NOT_FOUND",
-  "timestamp": "2026-03-10T12:00:00"
+  "timestamp": "2026-03-11T12:00:00"
+}
+```
+
+### Erreur de validation (400)
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "Erreurs de validation",
+  "errorCode": "VALIDATION_ERROR",
+  "errors": [
+    {
+      "field": "titre",
+      "message": "Le titre est obligatoire",
+      "rejectedValue": null
+    }
+  ],
+  "timestamp": "2026-03-11T12:00:00"
 }
 ```
 
@@ -148,7 +256,7 @@ HTTP Request
      ↓
 TodoController     ← reçoit la requête HTTP, délègue au service
      ↓
-TodoServiceImpl    ← logique métier + transactions
+TodoServiceImpl    ← logique métier + transactions + exceptions
      ↓        ↓
 Repository   Mapper
      ↓
@@ -163,6 +271,7 @@ GlobalExceptionHandler  ← intercepte les exceptions, retourne une ErrorRespons
 
 - Le titre d'une tâche doit être **unique**
 - Le statut par défaut à la création est `EN_COURS`
+- Le statut ne peut pas être changé pour la **même valeur** (doit changer)
 - Une tâche ne peut être **supprimée** que si son statut est `TERMINEE`
 
 ---
